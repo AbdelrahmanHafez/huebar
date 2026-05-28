@@ -111,3 +111,11 @@ swift build -c release             # release build
 ## Pull Request Workflow
 - After addressing PR review comments, **always resolve the corresponding review threads** using the GitHub GraphQL API (`resolveReviewThread` mutation)
 - Use the thread IDs from `get_review_comments` to resolve them in bulk
+
+### Personal Nightly Branch
+- Maintain `nightly` in the user's fork as the rolling personal build branch.
+- `nightly` starts from the latest upstream `origin/main`, then merges all of the user's open and draft upstream PR branches.
+- When creating a new PR for upstream, also push the same feature branch to the fork, then update `nightly` by merging that branch after the upstream PR branch is ready.
+- Prefer merging PR branches into `nightly` instead of cherry-picking, so the branch stays easy to rebuild and audit.
+- If a PR is stacked on another PR, merge the dependency first. For example, merge a base bugfix PR before its follow-up perf PR.
+- When deploying a personal build locally, deploy from `nightly` unless the user explicitly asks to test a single PR branch.
