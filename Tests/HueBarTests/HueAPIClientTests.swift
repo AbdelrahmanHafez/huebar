@@ -151,6 +151,7 @@ struct HueAPIClientTests {
     }
 
     @Test func toggleGroupedLightOptimisticUpdate() async throws {
+        // Arrange
         let client = makeClient()
         let validId = "00000000-0000-0000-0000-000000000001"
         client.groupedLights = [
@@ -184,9 +185,33 @@ struct HueAPIClientTests {
             return (response, Data())
         }
 
+        // Act
         try await client.toggleGroupedLight(id: validId, on: false)
         #expect(observedStateBeforeResponse.get() == false)
         #expect(client.groupedLights.first?.isOn == false)
+        #expect(client.groupedLights.first?.brightness == 0)
+    }
+
+    @Test func toggleGroupedLightOnPreservesOptimisticBrightness() async throws {
+        // Arrange
+        let client = makeClient()
+        let validId = "00000000-0000-0000-0000-000000000002"
+        client.groupedLights = [
+            GroupedLight(id: validId, on: OnState(on: false), dimming: DimmingState(brightness: 35.0), colorTemperature: nil),
+        ]
+
+        MockURLProtocol.requestHandler = { request in
+            #expect(request.httpMethod == "PUT")
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return (response, Data())
+        }
+
+        // Act
+        try await client.toggleGroupedLight(id: validId, on: true)
+
+        // Assert
+        #expect(client.groupedLights.first?.isOn == true)
+        #expect(client.groupedLights.first?.brightness == 35)
     }
 
     @Test func fetchRoomsHTTPError() async throws {
@@ -423,6 +448,7 @@ struct HueAPIClientTests {
     // MARK: - Light control tests
 
     @Test func toggleLightOptimisticUpdate() async throws {
+        // Arrange
         let client = makeClient()
         let validId = "00000000-0000-0000-0000-000000000001"
         client.lights = [makeLight(id: validId, name: "Lamp", ownerRid: "device-A")]
@@ -441,9 +467,34 @@ struct HueAPIClientTests {
             return (response, Data())
         }
 
+        // Act
         try await client.toggleLight(id: validId, on: false)
         #expect(observedStateBeforeResponse.get() == false)
         #expect(client.lights.first?.isOn == false)
+        #expect(client.lights.first?.brightness == 0)
+    }
+
+    @Test func toggleLightOnPreservesOptimisticBrightness() async throws {
+        // Arrange
+        let client = makeClient()
+        let validId = "00000000-0000-0000-0000-000000000002"
+        client.lights = [makeLight(id: validId, name: "Lamp", ownerRid: "device-A")]
+        client.lights[0].on = OnState(on: false)
+        client.lights[0].dimming = DimmingState(brightness: 35)
+
+        MockURLProtocol.requestHandler = { request in
+            #expect(request.httpMethod == "PUT")
+            #expect(request.url?.absoluteString.contains("/clip/v2/resource/light/\(validId)") == true)
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return (response, Data())
+        }
+
+        // Act
+        try await client.toggleLight(id: validId, on: true)
+
+        // Assert
+        #expect(client.lights.first?.isOn == true)
+        #expect(client.lights.first?.brightness == 35)
     }
 
     @Test func setLightBrightnessClamping() async throws {
