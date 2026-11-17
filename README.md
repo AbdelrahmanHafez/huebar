@@ -19,7 +19,7 @@ Philips discontinued the official Hue macOS app years ago, and most third-party 
 - 🎚️ **Brightness Control** — Adjust brightness per room/zone with a slider
 - 🎨 **Scene Selection** — Browse and activate saved scenes in a color-coded grid
 - 💡 **Individual Lights** — See and control each light in a room with per-light on/off toggles and brightness
-- 🎨 **Color Picker** — Full color wheel and color temperature slider for individual lights
+- 🎨 **Color Picker** — Full color wheel and color temperature slider for individual lights, plus a color wheel for whole rooms and zones
 - 🌉 **Multi-Bridge Support** — Connect multiple Hue Bridges and control all your lights from one place
 - 📌 **Pin to Top** — Pin favorite rooms/zones to the top of the list
 - 🔀 **Custom Order** — Right-click any room or zone to Move Up/Down/Top/Bottom
@@ -103,6 +103,12 @@ swift run
 3. When your bridge is found, click it and press the **link button** on your physical Hue Bridge
 4. That's it — your rooms and zones appear with toggle switches, brightness sliders, scene selection, and individual light controls
 
+Room and zone color changes preview immediately and coalesce while dragging. Leaving the detail view sends the final selection; failed changes restore the last known color and reconcile with the bridge when reachable.
+
+Room and zone cards blend the colors of their active lights horizontally, with vivid colors at the top and darker shading below. Scene and individual-light cards use the same treatment, with dark labels on near-white palettes. Card colors stay vivid when lights are dimmed; the brightness controls show the actual level.
+
+With VoiceOver, the color wheel exposes separate hue and saturation sliders with current values. The color-temperature control announces kelvin; increase it for warmer light or decrease it for cooler light. Light, room, and zone toggles announce their target names.
+
 ### Multiple Bridges
 
 If you have more than one Hue Bridge:
@@ -124,7 +130,7 @@ Shortcuts are registered via Carbon `RegisterEventHotKey` and do not require Acc
 
 ## Sleep/Wake Automation
 
-HueBar can automatically control rooms when your Mac sleeps and wakes — great for office lights or desk lamps:
+HueBar can automatically control rooms and zones across all configured Hue Bridges when your Mac sleeps and wakes — great for office lights or desk lamps. Wake scenes are recalled on the bridge that owns the selected room or zone.
 
 1. Click the ⚙️ gear icon in HueBar to open **Settings**
 2. In the **Sleep / Wake** section, click **Add Rule**

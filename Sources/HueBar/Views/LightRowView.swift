@@ -22,6 +22,9 @@ struct LightRowView: View {
     }
 
     var body: some View {
+        let colors = isOn ? apiClient.previewColors(for: groupId) : []
+        let foreground = ColorCardStyle.foreground(for: colors)
+
         VStack(alignment: .leading, spacing: 6) {
             // Icon + Name + Toggle row
             HStack(spacing: 8) {
@@ -29,22 +32,22 @@ struct LightRowView: View {
                     HStack(spacing: 8) {
                         Image(systemName: ArchetypeIcon.systemName(for: archetype))
                             .font(.title2)
-                            .foregroundStyle(isOn ? .white : .secondary)
+                            .foregroundStyle(isOn ? foreground : .secondary)
                             .frame(width: 28)
 
                         Text(name)
                             .fontWeight(.medium)
-                            .foregroundStyle(isOn ? .white : .primary)
-                            .shadow(color: isOn ? .black.opacity(0.3) : .clear, radius: 2, y: 1)
+                            .foregroundStyle(isOn ? foreground : .primary)
+                            .shadow(color: isOn && foreground == .white ? .black.opacity(0.3) : .clear, radius: 2, y: 1)
                         if isPinned {
                             Image(systemName: "pin.fill")
                                 .font(.caption2)
-                                .foregroundStyle(isOn ? .white.opacity(0.6) : .secondary)
+                                .foregroundStyle(isOn ? foreground.opacity(0.6) : .secondary)
                         }
                         Spacer()
                         Image(systemName: "chevron.right")
                             .font(.caption)
-                            .foregroundStyle(isOn ? AnyShapeStyle(.white.opacity(0.6)) : AnyShapeStyle(.tertiary))
+                            .foregroundStyle(isOn ? AnyShapeStyle(foreground.opacity(0.6)) : AnyShapeStyle(.tertiary))
                     }
                     .contentShape(Rectangle())
                 }
@@ -64,34 +67,30 @@ struct LightRowView: View {
             HStack(spacing: 4) {
                 Image(systemName: "sun.min")
                     .font(.caption2)
-                    .foregroundStyle(isOn ? .white.opacity(0.6) : .white.opacity(0.2))
-                Slider(value: $sliderBrightness, in: 1...100) { editing in
+                    .foregroundStyle(isOn ? foreground.opacity(0.6) : .white.opacity(0.2))
+                BrightnessSlider(value: $sliderBrightness, color: isOn ? foreground : .primary) { editing in
                     isUserDragging = editing
                     if !editing {
                         commitBrightnessChange(sliderBrightness, immediately: true)
                     }
                 }
-                    .controlSize(.small)
-                    .tint(isOn ? .white.opacity(0.8) : .white.opacity(0.15))
                     .disabled(!isOn)
                     .accessibilityLabel("\(name) brightness")
                     .accessibilityValue("\(Int(sliderBrightness))%")
                 Image(systemName: "sun.max.fill")
                     .font(.caption2)
-                    .foregroundStyle(isOn ? .white.opacity(0.6) : .white.opacity(0.2))
+                    .foregroundStyle(isOn ? foreground.opacity(0.6) : .white.opacity(0.2))
             }
         }
         .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(cardGradient)
-                .shadow(color: .black.opacity(0.3), radius: 6, y: 3)
-        )
+        .modifier(ColorCardStyle(
+            colors: isOn ? colors : nil, cornerRadius: 14, shadowOpacity: 0.3, shadowRadius: 6
+        ))
         .padding(.horizontal)
         .onAppear {
-            sliderBrightness = max(groupedLight?.brightness ?? 0, 1)
+            sliderBrightness = max(groupedLight?.displayBrightness ?? 0, 1)
         }
-        .onChange(of: groupedLight?.brightness) { _, newValue in
+        .onChange(of: groupedLight?.displayBrightness) { _, newValue in
             if let newValue, !isUserDragging {
                 sliderBrightness = max(newValue, 1)
             }
@@ -101,24 +100,6 @@ struct LightRowView: View {
             commitBrightnessChange(newValue)
         }
         .onDisappear { debounceTask?.cancel() }
-    }
-
-    private var cardGradient: some ShapeStyle {
-        guard isOn else {
-            return AnyShapeStyle(Color.hueCardOff)
-        }
-        let colors = apiClient.previewColors(for: groupId)
-        if colors.count >= 2 {
-            return AnyShapeStyle(
-                LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing)
-            )
-        } else if let first = colors.first {
-            return AnyShapeStyle(
-                LinearGradient(colors: [first, first.opacity(0.7)], startPoint: .topLeading, endPoint: .bottomTrailing)
-            )
-        } else {
-            return AnyShapeStyle(Color(red: 0.30, green: 0.26, blue: 0.23))
-        }
     }
 
     private var toggleBinding: Binding<Bool> {

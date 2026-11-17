@@ -21,19 +21,6 @@ enum SceneArtworkCatalog {
         return bundledImageNameAliases[normalized]
     }
 
-    static func url(forImageNamed name: String) -> URL? {
-        for bundle in [Bundle.main, Bundle.module] {
-            if let url = bundle.url(
-                forResource: name,
-                withExtension: imageExtension,
-                subdirectory: "SceneImages"
-            ) {
-                return url
-            }
-        }
-        return nil
-    }
-
     private static func normalizedSceneName(_ name: String) -> String {
         name
             .lowercased()

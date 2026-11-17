@@ -1,5 +1,12 @@
 import Foundation
 
+extension SceneArtworkCatalog {
+    static func url(forImageNamed name: String) -> URL? {
+        let bundle = Bundle.main.bundleURL.pathExtension == "app" ? Bundle.main : Bundle.module
+        return bundle.url(forResource: name, withExtension: imageExtension, subdirectory: "SceneImages")
+    }
+}
+
 struct SceneArtworkDescriptor: Equatable, Sendable {
     enum Source: Equatable, Sendable {
         case bundledImage(name: String)

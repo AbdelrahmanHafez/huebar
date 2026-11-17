@@ -9,104 +9,77 @@ struct SceneCard: View {
     var onPlayPause: (() -> Void)?
 
     var body: some View {
+        let artwork = scene.artwork.imageName.flatMap(SceneArtworkImageLoader.image(named:))
+        let foreground: Color = artwork == nil ? ColorCardStyle.foreground(for: scene.paletteColors) : .white
+
         ZStack {
-            cardContent
+            cardContent(artwork: artwork, foreground: foreground)
             if isActive && scene.supportsDynamic {
-                playPauseButton
+                playPauseButton(foreground: foreground)
                     .offset(y: -8)
             }
         }
     }
 
-    private var cardContent: some View {
+    private func cardContent(artwork: NSImage?, foreground: Color) -> some View {
         Button(action: onTap) {
-            ZStack(alignment: .bottom) {
-                SceneArtworkBackground(scene: scene)
-
-                LinearGradient(
-                    colors: [.clear, .black.opacity(0.55)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-
+            VStack(spacing: 6) {
+                Spacer()
                 Text(scene.name)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: 10, weight: .medium))
                     .lineLimit(2)
-                    .minimumScaleFactor(0.75)
+                    .minimumScaleFactor(0.8)
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(.white)
-                    .shadow(color: .black.opacity(0.55), radius: 2, y: 1)
-                    .padding(6)
-                    .frame(maxWidth: .infinity)
+                    .foregroundStyle(foreground)
+                    .shadow(color: foreground == .white ? .black.opacity(0.5) : .clear, radius: 2, y: 1)
             }
-            .frame(maxWidth: .infinity)
-            .aspectRatio(1, contentMode: .fit)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .frame(maxWidth: .infinity, minHeight: 64)
+            .padding(6)
+            .background {
+                if let artwork {
+                    artworkBackground(artwork)
+                }
+            }
+            .modifier(ColorCardStyle(colors: scene.paletteColors, cornerRadius: 12))
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .strokeBorder(isActive ? Color.white : Color.clear, lineWidth: 2)
             )
-            .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("\(scene.name) scene\(isActive ? ", active" : "")")
     }
 
-    private var playPauseButton: some View {
+    private func playPauseButton(foreground: Color) -> some View {
         Button {
             onPlayPause?()
         } label: {
             Image(systemName: isDynamic ? "pause.fill" : "play.fill")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(foreground)
                 .frame(width: 34, height: 34)
-                .background(.black.opacity(0.35), in: Circle())
+                .background(isLiquidGlassAvailable ? .clear : .black.opacity(0.35), in: Circle())
         }
         .accessibilityLabel(isDynamic ? "Pause dynamic scene" : "Play dynamic scene")
-        .buttonStyle(.plain)
-    }
-}
-
-private struct SceneArtworkBackground: View {
-    let scene: HueScene
-
-    private var artwork: SceneArtworkDescriptor {
-        scene.artwork
+        .hueGlassButtonStyle(fallback: .plain)
+        .buttonBorderShape(.circle)
     }
 
-    var body: some View {
+    private func artworkBackground(_ artwork: NSImage) -> some View {
         GeometryReader { proxy in
-            ZStack {
-                LinearGradient(
-                    colors: backgroundColors,
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-
-                if let imageName = artwork.imageName,
-                   let image = SceneArtworkImageLoader.image(named: imageName) {
-                    Image(nsImage: image)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: proxy.size.width, height: proxy.size.height)
-                        .clipped()
+            Image(nsImage: artwork)
+                .resizable()
+                .scaledToFill()
+                .frame(width: proxy.size.width, height: proxy.size.height)
+                .overlay {
+                    LinearGradient(
+                        colors: [.clear, .black.opacity(0.6)],
+                        startPoint: .top, endPoint: .bottom
+                    )
                 }
-            }
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
-    }
-
-    private var backgroundColors: [Color] {
-        let colors = scene.paletteColors
-        if colors.count >= 2 {
-            return colors
-        } else if let first = colors.first {
-            return [first, first.opacity(0.6)]
-        } else {
-            return [
-                .orange.opacity(0.6),
-                .purple.opacity(0.5),
-            ]
-        }
+        .accessibilityHidden(true)
     }
 }
 
